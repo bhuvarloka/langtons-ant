@@ -2,6 +2,7 @@ export const CANVAS_SIZE = 720;
 export const CELL_SIZE = 8;
 export const BG_COLOR = "#FFFAF0";
 export const FG_COLOR = "#0000FF";
+export const ANT_COLOR = "#FF2200";
 export const FONT_SIZE = 540;
 
 export const COLS = CANVAS_SIZE / CELL_SIZE;

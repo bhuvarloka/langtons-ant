@@ -1,6 +1,6 @@
 import p5 from "p5";
 import fontUrl from "./assets/fonts/LibreBaskerville-Italic.ttf";
-import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FONT_SIZE, BG_COLOR, FG_COLOR, STEPS_PER_FRAME, DX, DY } from "./config.js";
+import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FONT_SIZE, BG_COLOR, FG_COLOR, ANT_COLOR, STEPS_PER_FRAME, DX, DY } from "./config.js";
 import { saveHighRes } from "./utils.js";
 
 const HISTORY_SIZE = 200;
@@ -130,21 +130,24 @@ const sketch = (p) => {
   function tick() {
     const cell = grid[ant.x][ant.y];
     ant.dir = cell === 0 ? (ant.dir + 1) % 4 : (ant.dir + 3) % 4;
-    grid[ant.x][ant.y] = cell === 0 ? 1 : 0;
+    // Ant paints between red (2) and white (0); blue (1) is consumed but never restored
+    grid[ant.x][ant.y] = cell === 2 ? 0 : 2;
     ant.x = (ant.x + DX[ant.dir] + COLS) % COLS;
     ant.y = (ant.y + DY[ant.dir] + ROWS) % ROWS;
   }
 
+  const CELL_COLORS = [BG_COLOR, FG_COLOR, ANT_COLOR];
+
   function render() {
+    p.noStroke();
     for (let col = 0; col < COLS; col++) {
       for (let row = 0; row < ROWS; row++) {
-        p.fill(grid[col][row] === 1 ? FG_COLOR : BG_COLOR);
-        p.noStroke();
+        p.fill(CELL_COLORS[grid[col][row]]);
         p.rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       }
     }
-    const antColor = grid[ant.x][ant.y] === 1 ? BG_COLOR : FG_COLOR;
-    p.fill(antColor);
+    // Ant marker: show the opposite of its current trail color so it's visible
+    p.fill(grid[ant.x][ant.y] === 2 ? BG_COLOR : ANT_COLOR);
     p.rect(ant.x * CELL_SIZE, ant.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
   }
 };
