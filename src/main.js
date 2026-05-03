@@ -1,7 +1,7 @@
 import p5 from "p5";
 import fontUrl from "./assets/fonts/LibreBaskerville-Italic.ttf";
 import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FONT_SIZE, BG_COLOR, FG_COLOR, ANT_COLOR, STEPS_PER_FRAME, DX, DY } from "./config.js";
-import { saveHighRes } from "./utils.js";
+import { saveHighRes, CELL_COLORS } from "./utils.js";
 
 const HISTORY_SIZE = 200;
 
@@ -62,13 +62,11 @@ const sketch = (p) => {
       return false;
     }
     if (!running && p.keyCode === 39) {
-      console.log("RIGHT", "history:", history.length);
       tickBatch();
       p.redraw();
       return false;
     }
     if (!running && p.keyCode === 37) {
-      console.log("LEFT", "history:", history.length);
       if (history.length > 0) {
         restoreState(history.pop());
         p.redraw();
@@ -86,7 +84,11 @@ const sketch = (p) => {
     running = false;
     history = [];
     seedGrid(currentLetter);
-    spawnAnt();
+    ant = {
+      x: Math.floor(Math.random() * COLS),
+      y: Math.floor(Math.random() * ROWS),
+      dir: Math.floor(Math.random() * 4),
+    };
   }
 
   function seedGrid(letter) {
@@ -119,14 +121,6 @@ const sketch = (p) => {
     buf.remove();
   }
 
-  function spawnAnt() {
-    ant = {
-      x: Math.floor(Math.random() * COLS),
-      y: Math.floor(Math.random() * ROWS),
-      dir: Math.floor(Math.random() * 4),
-    };
-  }
-
   function tick() {
     const cell = grid[ant.x][ant.y];
     ant.dir = cell === 0 ? (ant.dir + 1) % 4 : (ant.dir + 3) % 4;
@@ -136,8 +130,6 @@ const sketch = (p) => {
     ant.y = (ant.y + DY[ant.dir] + ROWS) % ROWS;
   }
 
-  const CELL_COLORS = [BG_COLOR, FG_COLOR, ANT_COLOR];
-
   function render() {
     p.noStroke();
     for (let col = 0; col < COLS; col++) {
@@ -146,7 +138,6 @@ const sketch = (p) => {
         p.rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       }
     }
-    // Ant marker: show the opposite of its current trail color so it's visible
     p.fill(grid[ant.x][ant.y] === 2 ? BG_COLOR : ANT_COLOR);
     p.rect(ant.x * CELL_SIZE, ant.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
   }

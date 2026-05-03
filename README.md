@@ -1,6 +1,7 @@
 # Antype
 
 ![Antype — A](screenshot.png)
+![Antype — A](screenshot_02.png)
 
 A typographic automaton. Type a letter. Watch it dissolve.
 
