@@ -7,7 +7,7 @@ export const FONT_SIZE = 540;
 
 export const COLS = CANVAS_SIZE / CELL_SIZE;
 export const ROWS = CANVAS_SIZE / CELL_SIZE;
-export const STEPS_PER_FRAME = 60;
+export const STEPS_PER_FRAME = 30;
 
 // Directions: 0=UP 1=RIGHT 2=DOWN 3=LEFT
 export const DX = [0, 1, 0, -1];
