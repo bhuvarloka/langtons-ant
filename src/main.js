@@ -1,33 +1,63 @@
 import p5 from "p5";
 import fontUrl from "./assets/fonts/LibreBaskerville-Italic.ttf";
-import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FONT_SIZE, BG_COLOR, FG_COLOR, ANT_COLOR, STEPS_PER_FRAME, DX, DY } from "./config.js";
-import { saveHighRes, CELL_COLORS } from "./utils.js";
+import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FONT_SIZE, BG_COLOR, FG_COLOR, COLOR_A, COLOR_B, COLOR_LERP_DURATION, STEPS_PER_FRAME, DX, DY } from "./config.js";
+import { saveHighRes } from "./utils.js";
 
 const HISTORY_SIZE = 200;
 
+// ---- Color helpers ----
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function lerpColor(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+function rgbToHex([r, g, b]) {
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+const RGB_A = hexToRgb(COLOR_A);
+const RGB_B = hexToRgb(COLOR_B);
+
+function currentLerpColor(f) {
+  const t = (Math.sin((f / COLOR_LERP_DURATION) * Math.PI) + 1) / 2;
+  return rgbToHex(lerpColor(RGB_A, RGB_B, t));
+}
+
 const sketch = (p) => {
   let font;
+  // grid stores: null = OFF (bg), "fg" = seeded letter cell, or a hex color string for ant-painted cells
   let grid;
   let ant;
   let running = false;
   let currentLetter = "A";
+  let frame = 0; // independent simulation frame counter
 
   // ---- History ----
   let history = [];
 
   function snapshotState() {
-    history.push({ grid: grid.map((col) => col.slice()), ant: { ...ant } });
+    history.push({ grid: grid.map((col) => col.slice()), ant: { ...ant }, frame });
     if (history.length > HISTORY_SIZE) history.shift();
   }
 
   function restoreState(snapshot) {
     grid = snapshot.grid.map((col) => col.slice());
     ant = { ...snapshot.ant };
+    frame = snapshot.frame;
   }
 
   function tickBatch() {
     snapshotState();
     for (let i = 0; i < STEPS_PER_FRAME; i++) tick();
+    frame++;
   }
 
   // ---- Setup ----
@@ -83,6 +113,7 @@ const sketch = (p) => {
   function reset() {
     running = false;
     history = [];
+    frame = 0;
     seedGrid(currentLetter);
     ant = {
       x: Math.floor(Math.random() * COLS),
@@ -92,7 +123,8 @@ const sketch = (p) => {
   }
 
   function seedGrid(letter) {
-    grid = Array.from({ length: COLS }, () => new Uint8Array(ROWS));
+    // null = background OFF, "fg" = seeded letter ON
+    grid = Array.from({ length: COLS }, () => Array(ROWS).fill(null));
 
     const buf = p.createGraphics(CANVAS_SIZE, CANVAS_SIZE);
     buf.pixelDensity(1);
@@ -114,7 +146,7 @@ const sketch = (p) => {
         const cy = row * CELL_SIZE + Math.floor(CELL_SIZE / 2);
         const idx = (cy * w + cx) * 4;
         const luma = (px[idx] + px[idx + 1] + px[idx + 2]) / 3;
-        grid[col][row] = luma < 128 ? 1 : 0;
+        if (luma < 128) grid[col][row] = "fg";
       }
     }
 
@@ -123,22 +155,28 @@ const sketch = (p) => {
 
   function tick() {
     const cell = grid[ant.x][ant.y];
-    ant.dir = cell === 0 ? (ant.dir + 1) % 4 : (ant.dir + 3) % 4;
-    // Ant paints between red (2) and white (0); blue (1) is consumed but never restored
-    grid[ant.x][ant.y] = cell === 2 ? 0 : 2;
+    const isOn = cell !== null;
+    ant.dir = isOn ? (ant.dir + 3) % 4 : (ant.dir + 1) % 4;
+    // Paint: OFF→color, any ON→OFF
+    grid[ant.x][ant.y] = isOn ? null : currentLerpColor(frame);
     ant.x = (ant.x + DX[ant.dir] + COLS) % COLS;
     ant.y = (ant.y + DY[ant.dir] + ROWS) % ROWS;
   }
 
   function render() {
+    const antColor = currentLerpColor(frame);
     p.noStroke();
     for (let col = 0; col < COLS; col++) {
       for (let row = 0; row < ROWS; row++) {
-        p.fill(CELL_COLORS[grid[col][row]]);
+        const cell = grid[col][row];
+        if (cell === null) p.fill(BG_COLOR);
+        else if (cell === "fg") p.fill(FG_COLOR);
+        else p.fill(cell);
         p.rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       }
     }
-    p.fill(grid[ant.x][ant.y] === 2 ? BG_COLOR : ANT_COLOR);
+    // Ant shown as current lerp color
+    p.fill(antColor);
     p.rect(ant.x * CELL_SIZE, ant.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
   }
 };

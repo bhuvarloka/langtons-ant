@@ -1,6 +1,4 @@
-import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FG_COLOR, ANT_COLOR, BG_COLOR } from "./config.js";
-
-export const CELL_COLORS = [BG_COLOR, FG_COLOR, ANT_COLOR];
+import { CANVAS_SIZE, CELL_SIZE, COLS, ROWS, FG_COLOR, BG_COLOR } from "./config.js";
 
 export function saveHighRes(p, grid, currentLetter) {
   const scale = 2;
@@ -12,7 +10,10 @@ export function saveHighRes(p, grid, currentLetter) {
   for (let col = 0; col < COLS; col++) {
     const x = col * scaledCell;
     for (let row = 0; row < ROWS; row++) {
-      buf.fill(CELL_COLORS[grid[col][row]]);
+      const cell = grid[col][row];
+      if (cell === null) buf.fill(BG_COLOR);
+      else if (cell === "fg") buf.fill(FG_COLOR);
+      else buf.fill(cell);
       buf.rect(x, row * scaledCell, scaledCell, scaledCell);
     }
   }
